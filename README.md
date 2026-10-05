@@ -38,7 +38,7 @@ npm run setup
 npm start
 ```
 
-`npm run setup` no borra una configuración existente. Crea `.env` desde `.env.example` si hace falta, genera una `BOT_API_KEY` con `crypto.randomBytes(32)` si está vacía, crea directorios y prepara `data/bot.db`.
+`npm run setup` no borra una configuración existente. **No necesitas ejecutar `cp .env.example .env`**: crea `.env` desde `.env.example` si hace falta, genera una `BOT_API_KEY` con `crypto.randomBytes(32)` si está vacía, crea directorios y prepara `data/bot.db`. Si se extrajo un archivo parcial sin dotfiles, setup crea una configuración mínima segura en vez de fallar.
 
 Para comprobar herramientas de Termux:
 
