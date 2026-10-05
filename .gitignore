@@ -1,0 +1,13 @@
+# Secrets and runtime state
+.env
+sessions/*
+!sessions/.gitkeep
+data/*.db
+assets/temp/*
+!assets/temp/.gitkeep
+node_modules/
+
+# Logs and test artifacts
+*.log
+coverage/
+.DS_Store

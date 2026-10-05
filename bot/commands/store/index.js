@@ -1,0 +1,18 @@
+import { command } from '../_helpers.js';
+import { shopItems, buyItem, sellItem, inventoryFor, transferMoney, claimDaily } from '../../database/economy.js';
+import { getOrCreateUser, userLeaderboard } from '../../database/users.js';
+import { getMentions, jidToMention } from '../../lib/utils.js';
+
+const shopText = () => `♜ *Tienda*\n${Object.entries(shopItems).map(([key, item]) => `• ${key}: ${item.buy} monedas — ${item.description}`).join('\n')}\n\nUsa .buy <objeto> [cantidad].`;
+export default [
+  command({ name: 'store', aliases: ['shop'], description: 'Muestra la tienda.', category: 'store', execute: (ctx) => ctx.reply(shopText()) }),
+  command({ name: 'buy', args: '<objeto> [cantidad]', description: 'Compra un objeto de la tienda.', category: 'store', execute: async (ctx) => { const result = await buyItem(ctx.sender, ctx.args[0], Number(ctx.args[1] || 1)); return ctx.reply(`🛒 Compraste ${result.quantity} ${result.item.name}. Saldo: ${result.balance}.`); } }),
+  command({ name: 'sell', args: '<objeto> [cantidad]', description: 'Vende un objeto del inventario.', category: 'store', execute: async (ctx) => { const result = await sellItem(ctx.sender, ctx.args[0], Number(ctx.args[1] || 1)); return ctx.reply(`💰 Vendiste ${result.quantity} ${result.item.name}. Saldo: ${result.balance}.`); } }),
+  command({ name: 'balance', aliases: ['saldo'], description: 'Consulta tu saldo.', category: 'store', execute: async (ctx) => { const user = await getOrCreateUser(ctx.sender); return ctx.reply(`💰 Saldo: *${user.balance}* monedas.`); } }),
+  command({ name: 'inventory', aliases: ['inv'], description: 'Consulta tu inventario.', category: 'store', execute: async (ctx) => { const items = await inventoryFor(ctx.sender); return ctx.reply(`🎒 Inventario:\n${items.map((item) => `• ${item.item}: ${item.quantity}`).join('\n') || 'Vacío.'}`); } }),
+  command({ name: 'daily', description: 'Reclama monedas diarias.', category: 'store', execute: async (ctx) => { const result = await claimDaily(ctx.sender); return ctx.reply(result.claimed ? `🎁 Recibiste ${result.reward} monedas. Saldo: ${result.balance}.` : `⏳ Vuelve ${new Date(result.nextAt).toLocaleString('es')}.`); } }),
+  command({ name: 'gift', args: '<@usuario> <cantidad>', description: 'Envía monedas a otro usuario.', category: 'store', execute: async (ctx) => { const target = getMentions(ctx.message)[0]; if (!target) throw Object.assign(new Error('Menciona a un usuario y una cantidad.'), { code: 'MISSING_ARGUMENT' }); const amount = Number(ctx.args.at(-1)); const result = await transferMoney(ctx.sender, target, amount); return ctx.reply(`🎁 Enviaste ${result.amount} monedas a ${jidToMention(target)}. Saldo: ${result.balance}.`, { mentions: [target] }); } }),
+  command({ name: 'topmoney', description: 'Muestra los diez saldos más altos.', category: 'store', execute: async (ctx) => { const rows = await userLeaderboard('balance', 10); return ctx.reply(`💰 *Top dinero*\n${rows.map((row, index) => `${index + 1}. ${row.name} — ${row.balance}`).join('\n') || 'Sin datos.'}`); } }),
+  command({ name: 'item', args: '<objeto>', description: 'Consulta un objeto de tienda.', category: 'store', execute: (ctx) => { const item = shopItems[ctx.args[0]?.toLowerCase()]; if (!item) throw Object.assign(new Error('Objeto no encontrado.'), { code: 'ITEM_NOT_FOUND' }); return ctx.reply(`📦 *${item.name}*\nCompra: ${item.buy}\nVenta: ${item.sell}\n${item.description}`); } }),
+  command({ name: 'redeem', args: '<codigo>', description: 'Canjea un código promocional activo.', category: 'store', execute: () => { throw Object.assign(new Error('No hay códigos promocionales activos.'), { code: 'NO_ACTIVE_CODES' }); } })
+];
