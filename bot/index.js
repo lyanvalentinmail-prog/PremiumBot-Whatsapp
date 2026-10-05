@@ -2,13 +2,15 @@ import { initDatabase, closeDatabase } from './database/index.js';
 import { loadCommands } from './handler.js';
 import { createConnection } from './connection.js';
 import { logger } from './lib/logger.js';
+import { selectLoginMethod } from './login.js';
 
 let controller;
-export async function startBot({ shutdown } = {}) {
+export async function startBot({ shutdown, loginMethod } = {}) {
   if (controller) return controller;
   await initDatabase();
   const registry = await loadCommands();
-  controller = await createConnection({ registry, startedAt: Date.now(), shutdown });
+  const selectedLogin = loginMethod || await selectLoginMethod();
+  controller = await createConnection({ registry, startedAt: Date.now(), shutdown, loginMethod: selectedLogin });
   return controller;
 }
 export async function stopBot() {

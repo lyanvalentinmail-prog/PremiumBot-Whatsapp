@@ -94,11 +94,12 @@ La nueva clave se muestra **solo** durante setup/rotación explícita y nunca se
 
 ## Vincular WhatsApp
 
-1. Configura `OWNER_NUMBER` y opcionalmente `PAIRING_NUMBER` en `.env`.
+1. Configura `OWNER_NUMBER` en `.env`.
 2. Ejecuta `npm start`.
-3. Con `PAIRING_NUMBER`, el terminal mostrará el código temporal. En WhatsApp abre **Dispositivos vinculados → Vincular un dispositivo → Vincular con número de teléfono**.
-4. Sin `PAIRING_NUMBER`, escanea el QR que se imprime en el terminal.
-5. Las credenciales quedan exclusivamente en `sessions/`.
+3. En Termux/Linux con terminal interactiva aparecerá un selector: **1 = Código de vinculación** o **2 = QR**. Para código, escribe el número con código de país y sin `+`.
+4. En WhatsApp abre **Dispositivos vinculados → Vincular un dispositivo → Vincular con número de teléfono**, o escanea el QR según tu elección.
+5. Para PM2/systemd (sin terminal interactiva), define `BOT_AUTH_METHOD=qr` o `BOT_AUTH_METHOD=pairing`; el segundo requiere `PAIRING_NUMBER`.
+6. Las credenciales quedan exclusivamente en `sessions/`.
 
 Para volver a vincular sin perder economía, XP, configuración ni `.env`:
 

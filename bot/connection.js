@@ -7,11 +7,12 @@ import { getGroup } from './database/users.js';
 import { jidToMention } from './lib/utils.js';
 
 const MAX_RECONNECTS = 6;
-export async function createConnection({ registry, startedAt, shutdown }) {
+export async function createConnection({ registry, startedAt, shutdown, loginMethod = { type: 'qr' } }) {
   let socket;
   let stopped = false;
   let attempts = 0;
   let timer;
+  let pairingRequested = false;
 
   const connect = async () => {
     if (stopped) return;
@@ -41,8 +42,8 @@ export async function createConnection({ registry, startedAt, shutdown }) {
     });
     socket.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
-      if (qr) {
-        try { logger.info(`Escanea este QR si no usas pairing code:\n${await QRCode.toString(qr, { type: 'terminal', small: true })}`); } catch { logger.info('QR recibido; usa una terminal compatible para escanearlo.'); }
+      if (qr && loginMethod.type !== 'pairing') {
+        try { logger.info(`Escanea este código QR desde WhatsApp > Dispositivos vinculados:\n${await QRCode.toString(qr, { type: 'terminal', small: true })}`); } catch { logger.info('QR recibido; usa una terminal compatible para escanearlo.'); }
       }
       if (connection === 'connecting') logger.info('Conectando a WhatsApp…');
       if (connection === 'open') { attempts = 0; logger.info('WhatsApp conectado'); }
@@ -58,12 +59,17 @@ export async function createConnection({ registry, startedAt, shutdown }) {
         timer = setTimeout(() => connect().catch((error) => logger.error({ err: error }, 'Error de reconexión')), delay);
       }
     });
-    if (config.pairingNumber && !state.creds.registered) {
+    if (loginMethod.type === 'pairing' && !state.creds.registered && !pairingRequested) {
+      pairingRequested = true;
       setTimeout(async () => {
         try {
-          const code = await socket.requestPairingCode(config.pairingNumber);
-          logger.info({ pairingCode: code }, 'Pairing code solicitado; introdúcelo en WhatsApp > Dispositivos vinculados');
-        } catch (error) { logger.warn({ err: error }, 'No se pudo solicitar pairing code; usa QR'); }
+          const code = await socket.requestPairingCode(loginMethod.number);
+          // The code is intentionally shown only during an explicit login flow; it is never persisted.
+          console.log(`\n🔑 Código de vinculación: ${code}\nAbre WhatsApp > Dispositivos vinculados > Vincular con número de teléfono.\n`);
+        } catch (error) {
+          pairingRequested = false;
+          logger.warn({ err: error }, 'No se pudo solicitar pairing code. Reinicia y elige QR si el problema continúa.');
+        }
       }, 1500);
     }
   };
